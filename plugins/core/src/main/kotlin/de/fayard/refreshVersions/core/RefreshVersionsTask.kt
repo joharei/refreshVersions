@@ -1,15 +1,13 @@
 package de.fayard.refreshVersions.core
 
+import de.fayard.refreshVersions.core.internal.OutputFile
 import de.fayard.refreshVersions.core.internal.RefreshVersionsConfigHolder
-import de.fayard.refreshVersions.core.internal.RefreshVersionsConfigHolder.settings
 import de.fayard.refreshVersions.core.internal.SettingsPluginsUpdater
-import de.fayard.refreshVersions.core.internal.configureLintIfRunningOnAnAndroidProject
 import de.fayard.refreshVersions.core.internal.legacy.LegacyBootstrapUpdater
 import de.fayard.refreshVersions.core.internal.lookupVersionCandidates
-import de.fayard.refreshVersions.core.internal.problems.log
 import de.fayard.refreshVersions.core.internal.versions.VersionsPropertiesModel
 import de.fayard.refreshVersions.core.internal.versions.writeWithNewVersions
-import kotlinx.coroutines.*
+import kotlinx.coroutines.runBlocking
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.tasks.Input
@@ -31,7 +29,8 @@ import org.gradle.util.GradleVersion
 open class RefreshVersionsTask : DefaultTask() {
 
 
-    @Input @Optional
+    @Input
+    @Optional
     @Option(option = "enable", description = "Enable a feature flag")
     var enableFlag: FeatureFlag? = null
         set(value) {
@@ -39,7 +38,8 @@ open class RefreshVersionsTask : DefaultTask() {
             if (value != null) FeatureFlag.userSettings.put(value, true)
         }
 
-    @Input @Optional
+    @Input
+    @Optional
     @Option(option = "disable", description = "Disable a feature flag")
     var disableFlag: FeatureFlag? = null
         set(value) {
@@ -49,6 +49,7 @@ open class RefreshVersionsTask : DefaultTask() {
 
     @TaskAction
     fun taskActionRefreshVersions() {
+        OutputFile.checkWhichFilesExist(project.rootDir)
         if (FeatureFlag.userSettings.isNotEmpty()) {
             logger.lifecycle("Feature flags: " + FeatureFlag.userSettings)
         }
@@ -56,9 +57,6 @@ open class RefreshVersionsTask : DefaultTask() {
         // will reduce the number of repositories lookups, improving performance a little more.
 
         runBlocking {
-            val lintUpdatingProblemsAsync = async {
-                configureLintIfRunningOnAnAndroidProject(settings, RefreshVersionsConfigHolder.readVersionsMap())
-            }
             val result = lookupVersionCandidates(
                 httpClient = RefreshVersionsConfigHolder.httpClient,
                 project = project,
@@ -81,10 +79,8 @@ open class RefreshVersionsTask : DefaultTask() {
             warnAboutHardcodedVersionsIfAny(result.dependenciesWithHardcodedVersions)
             warnAboutDynamicVersionsIfAny(result.dependenciesWithDynamicVersions)
             warnAboutGradleUpdateAvailableIfAny(result.gradleUpdates)
-            lintUpdatingProblemsAsync.await().forEach { problem ->
-                logger.log(problem)
-            }
         }
+        OutputFile.VERSIONS_PROPERTIES.logFileWasModified()
     }
 
     private fun warnAboutGradleUpdateAvailableIfAny(gradleUpdates: List<Version>) {

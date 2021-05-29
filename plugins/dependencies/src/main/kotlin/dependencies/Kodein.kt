@@ -1,8 +1,8 @@
 @file:Suppress("PackageDirectoryMismatch", "SpellCheckingInspection", "unused")
 
 import de.fayard.refreshVersions.core.internal.ArtifactVersionKeyRule
+import dependencies.DependencyGroup
 import org.gradle.api.Incubating
-import org.gradle.kotlin.dsl.IsNotADependency
 
 /**
  * painless Kotlin dependency injection
@@ -41,18 +41,3 @@ object Kodein {
 }
 
 
-open class DependencyGroup(
-    val group: String,
-    val rule: ArtifactVersionKeyRule? = null,
-    val usePlatformConstraints: Boolean = false
-) : IsNotADependency {
-    init {
-        if (rule != null) ALL_RULES.add(rule)
-    }
-
-    fun module(module: String): String {
-        assert(module.trim() == module)
-        assert(module.contains(":").not())
-        return "$group:$module" + if (usePlatformConstraints) "" else ":_"
-    }
-}

@@ -27,7 +27,7 @@ open class MissingEntriesTask : DefaultTask() {
             versionKeyReader = versionKeyReader
         )
         val plugins = UsedPluginsHolder.unusedPlugins
-            .distinctBy { d -> pluginDependencyNotationToVersionKey(d.name) }
+            .distinctBy { d -> pluginDependencyNotationToVersionKey(d.name).also { println(it) } }
             .associateBy { d -> pluginDependencyNotationToVersionKey(d.name) }
             .filterKeys { key -> key != null && key !in versionsMap }
             as Map<String, ExternalDependency>

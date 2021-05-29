@@ -1,9 +1,6 @@
 package de.fayard.refreshVersions
 
-import de.fayard.refreshVersions.core.MissingEntriesTask
-import de.fayard.refreshVersions.core.RefreshVersionsCorePlugin
-import de.fayard.refreshVersions.core.bootstrapRefreshVersionsCore
-import de.fayard.refreshVersions.core.bootstrapRefreshVersionsCoreForBuildSrc
+import de.fayard.refreshVersions.core.*
 import de.fayard.refreshVersions.core.extensions.gradle.isBuildSrc
 import de.fayard.refreshVersions.core.internal.RefreshVersionsConfigHolder
 import de.fayard.refreshVersions.internal.getArtifactNameToConstantMapping
@@ -125,6 +122,14 @@ open class RefreshVersionsPlugin : Plugin<Any> {
             group = "refreshVersions"
             description = "Add missing entries to 'versions.properties'"
             outputs.upToDateWhen { false }
+        }
+        project.tasks.register<VersionsCatalogTask>(
+            name = "refreshVersionsCatalog"
+        ) {
+            group = "refreshVersions"
+            description = "Update gradle/libs.versions.toml"
+            outputs.upToDateWhen { false }
+            dependsOn("refreshVersionsMissingEntries")
         }
     }
 
